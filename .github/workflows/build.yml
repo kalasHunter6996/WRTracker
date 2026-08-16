@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PLAYERGLOBAL_HOME: /tmp/playerglobal
     steps:
       - uses: actions/checkout@v4
 
@@ -29,10 +31,12 @@ jobs:
 
       - name: Install Flash Player global 11.2
         run: |
-          mkdir -p "$FLEX_HOME/frameworks/libs/player/11.2"
+          mkdir -p "$PLAYERGLOBAL_HOME/11.2"
           curl -L --fail --retry 3 \
             https://raw.githubusercontent.com/nexussays/playerglobal/master/11.2/playerglobal.swc \
-            -o "$FLEX_HOME/frameworks/libs/player/11.2/playerglobal.swc"
+            -o "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
+          test -s "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
+          ls -lh "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
 
       - name: Compile SWF
         run: |
