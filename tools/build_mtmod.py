@@ -11,7 +11,7 @@ from zipfile import ZIP_STORED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 SWF = ROOT / "build" / "kalas.wrtracker.WrTrackerView.swf"
-OUT = ROOT / "build" / "WRTracker-0.1.0.mtmod"
+OUT = ROOT / "build" / "WRTracker-0.1.1.mtmod"
 
 if not SWF.is_file():
     raise SystemExit("Missing compiled SWF: %s" % SWF)
@@ -29,12 +29,20 @@ for path in pyc_files:
     entries.append((path, path.relative_to(ROOT).as_posix()))
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-with ZipFile(OUT, "w", compression=ZIP_STORED) as zf:
+with ZipFile(OUT, "w", compression=ZIP_STORED, allowZip64=False) as zf:
     for source, archive_name in entries:
         zf.write(source, archive_name, compress_type=ZIP_STORED)
 
-print("Created:", OUT)
-for info in ZipFile(OUT).infolist():
-    if info.compress_type != ZIP_STORED:
-        raise SystemExit("Non-STORE entry found: %s" % info.filename)
-    print("STORE:", info.filename)
+# Verify the actual central-directory compression method and package contents
+# before publishing the artifact. Every entry must be method 0 (STORE).
+with ZipFile(OUT, "r") as zf:
+    infos = zf.infolist()
+    if not infos:
+        raise SystemExit("MTMOD is empty")
+    for info in infos:
+        if info.compress_type != ZIP_STORED:
+            raise SystemExit("Non-STORE entry found: %s (method=%s)" %
+                             (info.filename, info.compress_type))
+        print("STORE:", info.filename)
+
+print("Created verified STORE-only MTMOD:", OUT)
