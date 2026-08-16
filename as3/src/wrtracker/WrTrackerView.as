@@ -1,13 +1,12 @@
 package wrtracker {
+    import flash.display.Sprite;
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
     import net.wg.infrastructure.base.AbstractView;
 
-    // The real client expects Scaleform Views to implement IView. The normal
-    // WG base class is AbstractView, which implements IView for us.
     public class WrTrackerView extends AbstractView {
-        private var bg:flash.display.Sprite = new flash.display.Sprite();
+        private var bg:Sprite = new Sprite();
         private var title:TextField = new TextField();
         private var wr:TextField = new TextField();
         private var half:TextField = new TextField();
@@ -27,7 +26,6 @@ package wrtracker {
             setup(half, 12, 60, 246, 20, 14, 0xDADADA);
             setup(whole, 12, 81, 246, 20, 14, 0xDADADA);
             setup(battles, 12, 103, 246, 18, 12, 0xA5A5A5);
-
             title.text = "WR TRACKER";
             wr.text = "WR TEST";
             half.text = "До .50%: --";
@@ -38,7 +36,6 @@ package wrtracker {
             addChild(half);
             addChild(whole);
             addChild(battles);
-
             x = 30;
             y = 170;
             mouseEnabled = false;
@@ -52,7 +49,6 @@ package wrtracker {
             tf.height = h;
             tf.selectable = false;
             tf.mouseEnabled = false;
-
             var fmt:TextFormat = new TextFormat();
             fmt.font = "$FieldFont";
             fmt.size = size;
@@ -66,12 +62,10 @@ package wrtracker {
             if (!wrValue || wrValue == "") {
                 return;
             }
-
             var parts:Array = wholeData.split("|");
             if (parts.length < 3) {
                 return;
             }
-
             wr.text = "WR " + wrValue + "%";
             half.text = "До " + halfTarget + "%: " + halfWins + " побед";
             whole.text = "До " + parts[0] + "%: " + parts[1] + " побед";
