@@ -7,5 +7,7 @@ package net.wg.infrastructure.interfaces {
      * into WRTracker.swf.
      */
     public interface IView {
+        function get as_config():Object;
+        function set as_config(value:Object):void;
     }
 }
