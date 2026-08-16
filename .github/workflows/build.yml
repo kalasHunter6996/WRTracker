@@ -43,12 +43,21 @@ jobs:
             python -m compileall -q res/scripts/client/gui/mods
           find res/scripts/client/gui/mods -name '*.pyc' -print
 
+      - name: Build external IView compile stub
+        run: |
+          mkdir -p build/stubs
+          "$FLEX_HOME/bin/compc" \
+            -source-path=as3/stubs \
+            -include-classes net.wg.infrastructure.interfaces.IView \
+            -output=build/stubs/wg-interfaces-stub.swc
+
       - name: Compile SWF
         run: |
           mkdir -p build
           "$FLEX_HOME/bin/mxmlc" \
             -target-player=11.2 \
             -source-path=as3/src \
+            -external-library-path+=build/stubs/wg-interfaces-stub.swc \
             -output=build/kalas.wrtracker.WrTrackerView.swf \
             as3/src/wrtracker/WrTrackerView.as
 
