@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from frameworks.wulf import WindowLayer
 from gui.Scaleform.framework.entities.View import View
 from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings
 from gui.Scaleform.framework.managers.loaders import SFViewLoadParams
@@ -82,10 +83,14 @@ def _on_app_initialized(event):
 
 
 def setup():
-    # ViewTypes.WINDOW is unavailable in this client branch; 0 is the
-    # corresponding window view type used by the target framework API.
-    settings = ViewSettings(WR_TRACKER_VIEW, WRTrackerView, SWF_NAME,
-                            0, None, ScopeTemplates.DEFAULT_SCOPE)
+    settings = ViewSettings(
+        WR_TRACKER_VIEW,
+        WRTrackerView,
+        SWF_NAME,
+        WindowLayer.TOP_WINDOW,
+        None,
+        ScopeTemplates.DEFAULT_SCOPE
+    )
     g_entitiesFactories.addSettings(settings)
     g_eventBus.addListener(events.AppLifeCycleEvent.INITIALIZED,
                            _on_app_initialized, EVENT_BUS_SCOPE.GLOBAL)
