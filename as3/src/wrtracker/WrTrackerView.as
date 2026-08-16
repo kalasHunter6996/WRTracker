@@ -3,17 +3,19 @@ package wrtracker {
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
-    import net.wg.infrastructure.interfaces.IView;
 
-    public class WrTrackerView extends Sprite implements IView {
+    // Keep the first lobby prototype deliberately small: the Python View owns
+    // the Scaleform lifecycle; the SWF only needs to expose the data method.
+    // In particular, do not fake net.wg.infrastructure.interfaces.IView here:
+    // that interface is client-version-specific and our CI stub is not the
+    // real game's WG interface.
+    public class WrTrackerView extends Sprite {
         private var bg:Sprite = new Sprite();
         private var title:TextField = new TextField();
         private var wr:TextField = new TextField();
         private var half:TextField = new TextField();
         private var whole:TextField = new TextField();
         private var battles:TextField = new TextField();
-        private var _asConfig:Object;
-        private var _loader:Object;
 
         public function WrTrackerView() {
             bg.graphics.beginFill(0x111111, 0.82);
@@ -30,40 +32,31 @@ package wrtracker {
             title.text = "WR TRACKER";
             wr.text = "WR TEST";
             half.text = "До .50%: --";
-            whole.text = "До 48%: --";
+            whole.text = "До следующего %: --";
             battles.text = "Бои: --";
             addChild(title); addChild(wr); addChild(half); addChild(whole); addChild(battles);
-            x = 30; y = 170;
-            mouseEnabled = false; mouseChildren = false;
-        }
-
-        public function get as_config():Object {
-            return _asConfig;
-        }
-
-        public function set as_config(value:Object):void {
-            _asConfig = value;
-        }
-
-        public function get loader():Object {
-            return _loader;
-        }
-
-        public function set loader(value:Object):void {
-            _loader = value;
+            x = 30;
+            y = 170;
+            mouseEnabled = false;
+            mouseChildren = false;
         }
 
         private function setup(tf:TextField, px:Number, py:Number, w:Number, h:Number, size:int, color:uint):void {
             tf.x = px; tf.y = py; tf.width = w; tf.height = h;
             tf.selectable = false; tf.mouseEnabled = false;
             var fmt:TextFormat = new TextFormat();
-            fmt.font = "$FieldFont"; fmt.size = size; fmt.color = color; fmt.align = TextFormatAlign.LEFT;
-            tf.defaultTextFormat = fmt; tf.setTextFormat(fmt);
+            fmt.font = "$FieldFont";
+            fmt.size = size;
+            fmt.color = color;
+            fmt.align = TextFormatAlign.LEFT;
+            tf.defaultTextFormat = fmt;
+            tf.setTextFormat(fmt);
         }
 
         public function as_setData(wrValue:String, halfTarget:String, halfWins:String, wholeData:String):void {
             if (!wrValue || wrValue == "") return;
             var parts:Array = wholeData.split("|");
+            if (parts.length < 3) return;
             wr.text = "WR " + wrValue + "%";
             half.text = "До " + halfTarget + "%: " + halfWins + " побед";
             whole.text = "До " + parts[0] + "%: " + parts[1] + " побед";
