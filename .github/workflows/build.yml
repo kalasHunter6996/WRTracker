@@ -27,16 +27,18 @@ jobs:
           tar -xzf /tmp/flex.tar.gz -C /tmp/flex
           echo "FLEX_HOME=$(find /tmp/flex -maxdepth 1 -type d -name 'apache-flex-sdk-*' | head -n 1)" >> "$GITHUB_ENV"
 
-      - name: Install Flash Player globals
+      - name: Install Flash Player global 11.2
         run: |
-          rm -rf "$FLEX_HOME/frameworks/libs/player"
-          git clone --depth 1 https://github.com/nexussays/playerglobal.git "$FLEX_HOME/frameworks/libs/player"
+          mkdir -p "$FLEX_HOME/frameworks/libs/player/11.2"
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/nexussays/playerglobal/master/11.2/playerglobal.swc \
+            -o "$FLEX_HOME/frameworks/libs/player/11.2/playerglobal.swc"
 
       - name: Compile SWF
         run: |
           mkdir -p build
           "$FLEX_HOME/bin/mxmlc" \
-            -target-player=32.0 \
+            -target-player=11.2 \
             -source-path=as3/src \
             -output=build/kalas.wrtracker.WrTrackerView.swf \
             as3/src/wrtracker/WrTrackerView.as
