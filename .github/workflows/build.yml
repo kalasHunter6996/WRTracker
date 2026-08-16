@@ -36,12 +36,9 @@ jobs:
             https://raw.githubusercontent.com/nexussays/playerglobal/master/11.2/playerglobal.swc \
             -o "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
           test -s "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
-          # Flex 4.16.1's default config refers to 27.0. Use a real copy,
-          # not a symlink, so the compiler can always open the expected file.
           cp "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc" \
              "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
           test -s "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
-          ls -l "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc" "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
 
       - name: Compile Python 2.7 modules to .pyc
         run: |
@@ -49,12 +46,12 @@ jobs:
             python -m compileall -q res/scripts/client/gui/mods
           find res/scripts/client/gui/mods -name '*.pyc' -print
 
-      - name: Build external IView compile stub
+      - name: Build external WG compile stub
         run: |
           mkdir -p build/stubs
           "$FLEX_HOME/bin/compc" \
             -source-path=as3/stubs \
-            -include-classes net.wg.infrastructure.interfaces.IView \
+            -include-classes net.wg.infrastructure.interfaces.IView,net.wg.infrastructure.base.AbstractView \
             -output=build/stubs/wg-interfaces-stub.swc
 
       - name: Compile SWF
