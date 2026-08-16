@@ -20,6 +20,11 @@ jobs:
           distribution: temurin
           java-version: '11'
 
+      - name: Install Python 2.7 for WoT bytecode
+        uses: actions/setup-python@v5
+        with:
+          python-version: '2.7'
+
       - name: Download Apache Flex SDK
         run: |
           curl -L --fail --retry 3 \
@@ -36,7 +41,12 @@ jobs:
             https://raw.githubusercontent.com/nexussays/playerglobal/master/11.2/playerglobal.swc \
             -o "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
           test -s "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
-          ls -lh "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
+
+      - name: Compile Python 2.7 modules to .pyc
+        run: |
+          python --version
+          python -m compileall -q res/scripts/client/gui/mods
+          find res/scripts/client/gui/mods -name '*.pyc' -print
 
       - name: Compile SWF
         run: |
