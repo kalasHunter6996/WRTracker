@@ -5,16 +5,11 @@ from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSet
 from gui.Scaleform.framework.managers.loaders import SFViewLoadParams
 from gui.shared import events, EVENT_BUS_SCOPE, g_eventBus
 from gui.app_loader.settings import APP_NAME_SPACE
-from helpers import dependency
-from skeletons.gui.app_loader import IAppLoader
+from gui.shared.personality import ServicesLocator
 from wrtracker_stats import AccountStats
 
 WR_TRACKER_VIEW = 'KALAS_WR_TRACKER_VIEW'
 SWF_NAME = 'kalas.wrtracker.WrTrackerView.swf'
-
-
-def _get_app_loader():
-    return dependency.instance(IAppLoader)
 
 
 class WRTrackerView(View):
@@ -33,17 +28,22 @@ class WRTrackerView(View):
             result = self._stats.update()
             print('[WRTracker] stats result=%r' % (result,))
             if not result:
-                self.as_setData('', '', '', '')
                 return
+
             wins, battles = result
             wr = round(float(wins) * 100.0 / battles, 2)
             half = (int(wr * 2.0) + 1) / 2.0
             whole = int(wr) + 1
-            self.as_setData('%.2f' % wr, '%.1f' % half,
-                            str(self._wins_to_target(wins, battles, half)),
-                            '%d|%d|%d' % (whole,
-                                           self._wins_to_target(wins, battles, whole),
-                                           battles))
+            self.as_setData(
+                '%.2f' % wr,
+                '%.1f' % half,
+                str(self._wins_to_target(wins, battles, half)),
+                '%d|%d|%d' % (
+                    whole,
+                    self._wins_to_target(wins, battles, whole),
+                    battles
+                )
+            )
         except Exception as exc:
             print('[WRTracker] update failed: %s' % exc)
 
@@ -57,21 +57,25 @@ class WRTrackerView(View):
         return n
 
     def as_setData(self, wr, half_target, half_wins, whole_data):
-        print('[WRTracker] as_setData(%r, %r, %r, %r)' %
-              (wr, half_target, half_wins, whole_data))
         if self.flashObject is not None:
             self.flashObject.as_setData(wr, half_target, half_wins, whole_data)
 
 
-def _load_view():
+_loaded = False
+
+
+def _load_view(event=None):
+    global _loaded
+    if _loaded:
+        return
     try:
-        app_loader = _get_app_loader()
-        print('[WRTracker] appLoader=%r' % app_loader)
-        app = app_loader.getDefLobbyApp()
-        print('[WRTracker] getDefLobbyApp=%r' % app)
-        if app is not None:
-            app.loadView(SFViewLoadParams(WR_TRACKER_VIEW))
-            print('[WRTracker] loadView requested')
+        app = ServicesLocator.appLoader.getApp(APP_NAME_SPACE.SF_LOBBY)
+        print('[WRTracker] lobby app=%r' % app)
+        if app is None:
+            return
+        app.loadView(SFViewLoadParams(WR_TRACKER_VIEW))
+        _loaded = True
+        print('[WRTracker] loadView requested')
     except Exception as exc:
         print('[WRTracker] loadView failed: %s' % exc)
 
@@ -79,7 +83,7 @@ def _load_view():
 def _on_app_initialized(event):
     if event.ns == APP_NAME_SPACE.SF_LOBBY:
         print('[WRTracker] SF_LOBBY initialized')
-        _load_view()
+        _load_view(event)
 
 
 def setup():
@@ -87,14 +91,16 @@ def setup():
         WR_TRACKER_VIEW,
         WRTrackerView,
         SWF_NAME,
-        WindowLayer.TOP_WINDOW,
+        WindowLayer.WINDOW,
         None,
-        ScopeTemplates.DEFAULT_SCOPE
+        ScopeTemplates.VIEW_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
-    g_eventBus.addListener(events.AppLifeCycleEvent.INITIALIZED,
-                           _on_app_initialized, EVENT_BUS_SCOPE.GLOBAL)
-    _load_view()
+    g_eventBus.addListener(
+        events.AppLifeCycleEvent.INITIALIZED,
+        _on_app_initialized,
+        EVENT_BUS_SCOPE.GLOBAL
+    )
 
 
 setup()
