@@ -1,16 +1,13 @@
 package wrtracker {
-    import flash.display.Sprite;
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
+    import net.wg.infrastructure.base.AbstractView;
 
-    // Keep the first lobby prototype deliberately small: the Python View owns
-    // the Scaleform lifecycle; the SWF only needs to expose the data method.
-    // In particular, do not fake net.wg.infrastructure.interfaces.IView here:
-    // that interface is client-version-specific and our CI stub is not the
-    // real game's WG interface.
-    public class WrTrackerView extends Sprite {
-        private var bg:Sprite = new Sprite();
+    // The real client expects Scaleform Views to implement IView. The normal
+    // WG base class is AbstractView, which implements IView for us.
+    public class WrTrackerView extends AbstractView {
+        private var bg:flash.display.Sprite = new flash.display.Sprite();
         private var title:TextField = new TextField();
         private var wr:TextField = new TextField();
         private var half:TextField = new TextField();
@@ -18,6 +15,8 @@ package wrtracker {
         private var battles:TextField = new TextField();
 
         public function WrTrackerView() {
+            super();
+
             bg.graphics.beginFill(0x111111, 0.82);
             bg.graphics.drawRoundRect(0, 0, 270, 128, 10, 10);
             bg.graphics.endFill();
@@ -34,7 +33,12 @@ package wrtracker {
             half.text = "До .50%: --";
             whole.text = "До следующего %: --";
             battles.text = "Бои: --";
-            addChild(title); addChild(wr); addChild(half); addChild(whole); addChild(battles);
+            addChild(title);
+            addChild(wr);
+            addChild(half);
+            addChild(whole);
+            addChild(battles);
+
             x = 30;
             y = 170;
             mouseEnabled = false;
@@ -42,8 +46,13 @@ package wrtracker {
         }
 
         private function setup(tf:TextField, px:Number, py:Number, w:Number, h:Number, size:int, color:uint):void {
-            tf.x = px; tf.y = py; tf.width = w; tf.height = h;
-            tf.selectable = false; tf.mouseEnabled = false;
+            tf.x = px;
+            tf.y = py;
+            tf.width = w;
+            tf.height = h;
+            tf.selectable = false;
+            tf.mouseEnabled = false;
+
             var fmt:TextFormat = new TextFormat();
             fmt.font = "$FieldFont";
             fmt.size = size;
@@ -54,9 +63,15 @@ package wrtracker {
         }
 
         public function as_setData(wrValue:String, halfTarget:String, halfWins:String, wholeData:String):void {
-            if (!wrValue || wrValue == "") return;
+            if (!wrValue || wrValue == "") {
+                return;
+            }
+
             var parts:Array = wholeData.split("|");
-            if (parts.length < 3) return;
+            if (parts.length < 3) {
+                return;
+            }
+
             wr.text = "WR " + wrValue + "%";
             half.text = "До " + halfTarget + "%: " + halfWins + " побед";
             whole.text = "До " + parts[0] + "%: " + parts[1] + " побед";
