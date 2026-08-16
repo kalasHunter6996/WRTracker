@@ -3,8 +3,9 @@ package wrtracker {
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
+    import net.wg.infrastructure.base.AbstractView;
 
-    public class WrTrackerView extends Sprite {
+    public class WrTrackerView extends AbstractView {
         private var bg:Sprite = new Sprite();
         private var title:TextField = new TextField();
         private var wr:TextField = new TextField();
@@ -13,6 +14,7 @@ package wrtracker {
         private var battles:TextField = new TextField();
 
         public function WrTrackerView() {
+            super();
             bg.graphics.beginFill(0x111111, 0.82);
             bg.graphics.drawRoundRect(0, 0, 270, 128, 10, 10);
             bg.graphics.endFill();
