@@ -36,6 +36,10 @@ jobs:
             https://raw.githubusercontent.com/nexussays/playerglobal/master/11.2/playerglobal.swc \
             -o "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
           test -s "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
+          # Apache Flex 4.16.1's default config expects playerglobal under 27.0.
+          # Use the same playerglobal SWC for the compile-only interface stub.
+          mkdir -p "$PLAYERGLOBAL_HOME/27.0"
+          ln -sf "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc" "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
 
       - name: Compile Python 2.7 modules to .pyc
         run: |
