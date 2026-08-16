@@ -31,15 +31,17 @@ jobs:
 
       - name: Install Flash Player global 11.2
         run: |
-          mkdir -p "$PLAYERGLOBAL_HOME/11.2"
+          mkdir -p "$PLAYERGLOBAL_HOME/11.2" "$PLAYERGLOBAL_HOME/27.0"
           curl -L --fail --retry 3 \
             https://raw.githubusercontent.com/nexussays/playerglobal/master/11.2/playerglobal.swc \
             -o "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
           test -s "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc"
-          # Apache Flex 4.16.1's default config expects playerglobal under 27.0.
-          # Use the same playerglobal SWC for the compile-only interface stub.
-          mkdir -p "$PLAYERGLOBAL_HOME/27.0"
-          ln -sf "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc" "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
+          # Flex 4.16.1's default config refers to 27.0. Use a real copy,
+          # not a symlink, so the compiler can always open the expected file.
+          cp "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc" \
+             "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
+          test -s "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
+          ls -l "$PLAYERGLOBAL_HOME/11.2/playerglobal.swc" "$PLAYERGLOBAL_HOME/27.0/playerglobal.swc"
 
       - name: Compile Python 2.7 modules to .pyc
         run: |
