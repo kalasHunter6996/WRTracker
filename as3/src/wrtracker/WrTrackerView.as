@@ -3,8 +3,9 @@ package wrtracker {
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
+    import net.wg.infrastructure.interfaces.IView;
 
-    public class WrTrackerView extends Sprite {
+    public class WrTrackerView extends Sprite implements IView {
         private var bg:Sprite = new Sprite();
         private var title:TextField = new TextField();
         private var wr:TextField = new TextField();
