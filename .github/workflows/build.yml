@@ -3,8 +3,8 @@ name: Build WRTracker
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
 
 jobs:
   build:
