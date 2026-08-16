@@ -3,9 +3,8 @@ package wrtracker {
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
-    import net.wg.infrastructure.base.AbstractView;
 
-    public class WrTrackerView extends AbstractView {
+    public class WrTrackerView extends Sprite {
         private var bg:Sprite = new Sprite();
         private var title:TextField = new TextField();
         private var wr:TextField = new TextField();
@@ -14,7 +13,6 @@ package wrtracker {
         private var battles:TextField = new TextField();
 
         public function WrTrackerView() {
-            super();
             bg.graphics.beginFill(0x111111, 0.82);
             bg.graphics.drawRoundRect(0, 0, 270, 128, 10, 10);
             bg.graphics.endFill();
@@ -27,6 +25,10 @@ package wrtracker {
             setup(battles, 12, 103, 246, 18, 12, 0xA5A5A5);
 
             title.text = "WR TRACKER";
+            wr.text = "WR TEST";
+            half.text = "До .50%: --";
+            whole.text = "До 48%: --";
+            battles.text = "Бои: --";
             addChild(title); addChild(wr); addChild(half); addChild(whole); addChild(battles);
             x = 30; y = 170;
             mouseEnabled = false; mouseChildren = false;
@@ -41,9 +43,7 @@ package wrtracker {
         }
 
         public function as_setData(wrValue:String, halfTarget:String, halfWins:String, wholeData:String):void {
-            if (!wrValue || wrValue == "") {
-                wr.text = "WR --.--%"; half.text = "До .50: --"; whole.text = "До целого: --"; battles.text = "Бои: --"; return;
-            }
+            if (!wrValue || wrValue == "") return;
             var parts:Array = wholeData.split("|");
             wr.text = "WR " + wrValue + "%";
             half.text = "До " + halfTarget + "%: " + halfWins + " побед";
