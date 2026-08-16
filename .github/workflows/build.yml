@@ -1,0 +1,51 @@
+name: Build WRTracker
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Download Apache Flex SDK
+        run: |
+          curl -L --fail --retry 3 \
+            https://dlcdn.apache.org/flex/4.16.1/binaries/apache-flex-sdk-4.16.1-bin.tar.gz \
+            -o /tmp/flex.tar.gz
+          mkdir -p /tmp/flex
+          tar -xzf /tmp/flex.tar.gz -C /tmp/flex
+          echo "FLEX_HOME=$(find /tmp/flex -maxdepth 1 -type d -name 'apache-flex-sdk-*' | head -n 1)" >> "$GITHUB_ENV"
+
+      - name: Install Flash Player globals
+        run: |
+          rm -rf "$FLEX_HOME/frameworks/libs/player"
+          git clone --depth 1 https://github.com/nexussays/playerglobal.git "$FLEX_HOME/frameworks/libs/player"
+
+      - name: Compile SWF
+        run: |
+          mkdir -p build
+          "$FLEX_HOME/bin/mxmlc" \
+            -target-player=32.0 \
+            -source-path=as3/src \
+            -output=build/kalas.wrtracker.WrTrackerView.swf \
+            as3/src/wrtracker/WrTrackerView.as
+
+      - name: Package MTMOD
+        run: python3 tools/build_mtmod.py
+
+      - name: Upload MTMOD
+        uses: actions/upload-artifact@v4
+        with:
+          name: WRTracker-mtmod
+          path: build/WRTracker-*.mtmod
