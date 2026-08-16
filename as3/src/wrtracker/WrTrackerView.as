@@ -12,6 +12,7 @@ package wrtracker {
         private var half:TextField = new TextField();
         private var whole:TextField = new TextField();
         private var battles:TextField = new TextField();
+        private var _asConfig:Object;
 
         public function WrTrackerView() {
             bg.graphics.beginFill(0x111111, 0.82);
@@ -33,6 +34,14 @@ package wrtracker {
             addChild(title); addChild(wr); addChild(half); addChild(whole); addChild(battles);
             x = 30; y = 170;
             mouseEnabled = false; mouseChildren = false;
+        }
+
+        public function get as_config():Object {
+            return _asConfig;
+        }
+
+        public function set as_config(value:Object):void {
+            _asConfig = value;
         }
 
         private function setup(tf:TextField, px:Number, py:Number, w:Number, h:Number, size:int, color:uint):void {
