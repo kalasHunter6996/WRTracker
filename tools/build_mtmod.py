@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Package WRTracker into an MTMOD archive.
+"""Build a Mir Tankov MTMOD package.
 
-MTMOD packages used by Mir Tankov must be ZIP containers with STORE
-(no-compression) entries. Using DEFLATE makes the client reject the package
-with: "compression not supported".
+MTMOD is a ZIP container with STORE/no compression entries. The game also
+expects client Python mods in compiled Python-2.7 bytecode (.pyc), as in the
+reference mod supplied for this project.
 """
 from pathlib import Path
 from zipfile import ZIP_STORED, ZipFile
@@ -14,17 +14,18 @@ SWF = ROOT / "build" / "kalas.wrtracker.WrTrackerView.swf"
 OUT = ROOT / "build" / "WRTracker-0.1.0.mtmod"
 
 if not SWF.is_file():
-    raise SystemExit(
-        "Missing compiled SWF: %s\n"
-        "Compile as3/src/wrtracker/WrTrackerView.as first." % SWF
-    )
+    raise SystemExit("Missing compiled SWF: %s" % SWF)
+
+pyc_files = sorted((ROOT / "res" / "scripts" / "client").rglob("*.pyc"))
+if not pyc_files:
+    raise SystemExit("No .pyc files found. The WoT Python modules must be compiled first.")
 
 entries = [
     (ROOT / "meta.xml", "meta.xml"),
-    (SWF, "res/packages/kalas/wrtracker/kalas.wrtracker.WrTrackerView.swf"),
+    (SWF, "res/gui/flash/kalas.wrtracker.WrTrackerView.swf"),
 ]
 
-for path in sorted((ROOT / "res" / "scripts" / "client").rglob("*.py")):
+for path in pyc_files:
     entries.append((path, path.relative_to(ROOT).as_posix()))
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -33,4 +34,7 @@ with ZipFile(OUT, "w", compression=ZIP_STORED) as zf:
         zf.write(source, archive_name, compress_type=ZIP_STORED)
 
 print("Created:", OUT)
-print("Compression: ZIP_STORED (0 / no compression)")
+for info in ZipFile(OUT).infolist():
+    if info.compress_type != ZIP_STORED:
+        raise SystemExit("Non-STORE entry found: %s" % info.filename)
+    print("STORE:", info.filename)
