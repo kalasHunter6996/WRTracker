@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from gui.Scaleform.framework.entities.View import View
-from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings, ViewTypes
+from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings
 from gui.Scaleform.framework.managers.loaders import SFViewLoadParams
 from gui.app_loader import g_appLoader
 from gui.app_loader.settings import APP_NAME_SPACE
@@ -93,7 +93,7 @@ def setup():
         WR_TRACKER_VIEW,
         WRTrackerView,
         SWF_NAME,
-        ViewTypes.WINDOW,
+        0,
         None,
         ScopeTemplates.DEFAULT_SCOPE
     )
@@ -103,9 +103,6 @@ def setup():
         _on_app_initialized,
         EVENT_BUS_SCOPE.GLOBAL
     )
-
-    # The mod can be imported after the lobby INITIALIZED event has already fired.
-    # In that case the event listener alone never creates the view.
     _load_view()
 
 
