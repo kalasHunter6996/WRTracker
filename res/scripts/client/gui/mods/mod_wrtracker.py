@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import BigWorld
 from frameworks.wulf import WindowLayer
 from gui.Scaleform.framework.entities.View import View
 from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings
@@ -16,36 +17,65 @@ class WRTrackerView(View):
     def __init__(self, *args, **kwargs):
         super(WRTrackerView, self).__init__(*args, **kwargs)
         self._stats = AccountStats()
+        self._polls = 0
+        self._polling = False
         print('[WRTracker] View __init__')
 
     def _populate(self):
         super(WRTrackerView, self)._populate()
         print('[WRTracker] View populated, flashObject=%r' % self.flashObject)
-        self._update()
+        self._schedule_update()
+
+    def _schedule_update(self):
+        if self._polling:
+            return
+        self._polling = True
+        self._polls = 0
+        BigWorld.callback(0.5, self._poll_stats)
+
+    def _poll_stats(self):
+        self._polling = False
+        if self.flashObject is None:
+            return
+        self._polls += 1
+        if self._update():
+            return
+        if self._polls < 60:
+            self._polling = True
+            BigWorld.callback(1.0, self._poll_stats)
+        else:
+            print('[WRTracker] stats polling timed out')
 
     def _update(self):
         try:
             result = self._stats.update()
             print('[WRTracker] stats result=%r' % (result,))
             if not result:
-                return
+                return False
 
             wins, battles = result
+            if battles <= 0:
+                print('[WRTracker] stats invalid: battles=%d wins=%d' % (battles, wins))
+                return False
+
             wr = round(float(wins) * 100.0 / battles, 2)
             half = (int(wr * 2.0) + 1) / 2.0
             whole = int(wr) + 1
+            half_wins = self._wins_to_target(wins, battles, half)
+            whole_wins = self._wins_to_target(wins, battles, whole)
+            print('[WRTracker] battles=%d wins=%d winrate=%.2f halfTarget=%.1f halfWins=%d wholeTarget=%d wholeWins=%d' % (
+                battles, wins, wr, half, half_wins, whole, whole_wins
+            ))
             self.as_setData(
                 '%.2f' % wr,
                 '%.1f' % half,
-                str(self._wins_to_target(wins, battles, half)),
-                '%d|%d|%d' % (
-                    whole,
-                    self._wins_to_target(wins, battles, whole),
-                    battles
-                )
+                str(half_wins),
+                '%d|%d|%d' % (whole, whole_wins, battles)
             )
+            return True
         except Exception as exc:
             print('[WRTracker] update failed: %s' % exc)
+            return False
 
     def _wins_to_target(self, wins, battles, target):
         if target >= 100.0 or float(wins) * 100.0 / battles >= target:
