@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Package the WRTracker source tree into a .mtmod archive.
+"""Package WRTracker into an MTMOD archive.
 
-The compiled Scaleform SWF must exist at:
-  build/kalas.wrtracker.WrTrackerView.swf
+MTMOD packages used by Mir Tankov must be ZIP containers with STORE
+(no-compression) entries. Using DEFLATE makes the client reject the package
+with: "compression not supported".
 """
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_STORED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 SWF = ROOT / "build" / "kalas.wrtracker.WrTrackerView.swf"
@@ -23,13 +24,13 @@ entries = [
     (SWF, "res/packages/kalas/wrtracker/kalas.wrtracker.WrTrackerView.swf"),
 ]
 
-# Python files are loaded from res/scripts/client by the game mod loader.
 for path in sorted((ROOT / "res" / "scripts" / "client").rglob("*.py")):
     entries.append((path, path.relative_to(ROOT).as_posix()))
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-with ZipFile(OUT, "w", ZIP_DEFLATED) as zf:
+with ZipFile(OUT, "w", compression=ZIP_STORED) as zf:
     for source, archive_name in entries:
-        zf.write(source, archive_name)
+        zf.write(source, archive_name, compress_type=ZIP_STORED)
 
 print("Created:", OUT)
+print("Compression: ZIP_STORED (0 / no compression)")
