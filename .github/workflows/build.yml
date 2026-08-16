@@ -51,7 +51,9 @@ jobs:
           mkdir -p build/stubs
           "$FLEX_HOME/bin/compc" \
             -source-path=as3/stubs \
-            -include-classes net.wg.infrastructure.interfaces.IView,net.wg.infrastructure.base.AbstractView \
+            -include-classes \
+            net.wg.infrastructure.interfaces.IView \
+            net.wg.infrastructure.base.AbstractView \
             -output=build/stubs/wg-interfaces-stub.swc
 
       - name: Compile SWF
