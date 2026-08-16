@@ -9,5 +9,7 @@ package net.wg.infrastructure.interfaces {
     public interface IView {
         function get as_config():Object;
         function set as_config(value:Object):void;
+        function get loader():Object;
+        function set loader(value:Object):void;
     }
 }
