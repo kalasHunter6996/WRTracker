@@ -26,7 +26,20 @@ class WRTrackerView(View):
     def _populate(self):
         super(WRTrackerView, self)._populate()
         print('[WRTracker] View populated, flashObject=%r' % self.flashObject)
+        self._force_visible()
         self._schedule_update(initial=True)
+
+    def _force_visible(self):
+        try:
+            self.flashObject.visible = True
+            self.flashObject.alpha = 1.0
+            self.flashObject.x = 30
+            self.flashObject.y = 170
+            self.flashObject.scaleX = 1.0
+            self.flashObject.scaleY = 1.0
+            print('[WRTracker] forced flashObject visible at x=30 y=170')
+        except Exception as exc:
+            print('[WRTracker] force visible failed: %s' % exc)
 
     def _schedule_update(self, initial=False):
         if self._refresh_scheduled or self.flashObject is None:
@@ -39,6 +52,7 @@ class WRTrackerView(View):
         self._refresh_scheduled = False
         if self.flashObject is None:
             return
+        self._force_visible()
         self._poll_stats()
 
     def _poll_stats(self):
