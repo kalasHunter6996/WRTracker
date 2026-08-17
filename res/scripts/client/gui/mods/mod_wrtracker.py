@@ -29,6 +29,12 @@ class WRTrackerView(View):
         self._force_visible()
         self._schedule_update(initial=True)
 
+    def _dispose(self):
+        print('[WRTracker] View dispose')
+        self._refresh_scheduled = False
+        self._polling = False
+        super(WRTrackerView, self)._dispose()
+
     def _force_visible(self):
         try:
             self.flashObject.visible = True
@@ -138,9 +144,18 @@ def _load_view(event=None):
 
 
 def _on_app_initialized(event):
+    global _loaded
     if event.ns == APP_NAME_SPACE.SF_LOBBY:
-        print('[WRTracker] SF_LOBBY initialized')
+        print('[WRTracker] SF_LOBBY initialized (loaded=%r)' % _loaded)
+        _loaded = False
         _load_view(event)
+
+
+def _on_app_destroyed(event):
+    global _loaded
+    if event.ns == APP_NAME_SPACE.SF_LOBBY:
+        _loaded = False
+        print('[WRTracker] SF_LOBBY destroyed; tracker will reload on next lobby init')
 
 
 def setup():
@@ -156,6 +171,11 @@ def setup():
     g_eventBus.addListener(
         events.AppLifeCycleEvent.INITIALIZED,
         _on_app_initialized,
+        EVENT_BUS_SCOPE.GLOBAL
+    )
+    g_eventBus.addListener(
+        events.AppLifeCycleEvent.DESTROYED,
+        _on_app_destroyed,
         EVENT_BUS_SCOPE.GLOBAL
     )
 
