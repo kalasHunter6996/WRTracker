@@ -46,13 +46,34 @@ class WRTrackerView(View):
             if app is None or app.containerManager is None:
                 return False
 
-            # LOBBY_SUB is the central lobby container. Its current view is
-            # Hangar while the player is in the garage, and another view (for
-            # example achievements, store, missions, etc.) when the player
-            # leaves the garage. This lets the global tracker stay registered
-            # without drawing over other lobby screens.
             current = app.containerManager.getView(ViewTypes.LOBBY_SUB)
-            return current is not None and getattr(current, 'alias', None) == 'hangar'
+            if current is None:
+                return False
+
+            # In this client the object returned by LOBBY_SUB is the actual
+            # central lobby view, but its public ``alias`` is not reliable.
+            # Depending on the client/mod combination it can expose the view
+            # identity through uniqueName, __class__.__name__, or ViewKey.
+            alias = getattr(current, 'alias', None)
+            unique_name = getattr(current, 'uniqueName', None)
+            class_name = getattr(current.__class__, '__name__', '')
+            view_key = getattr(current, 'viewKey', None)
+            key_alias = getattr(view_key, 'alias', None) if view_key is not None else None
+
+            active = (
+                alias == 'hangar' or
+                unique_name == 'hangar' or
+                key_alias == 'hangar' or
+                class_name == 'Hangar' or
+                class_name == 'HangarView'
+            )
+
+            # Keep this diagnostic compact: it will show exactly what the
+            # client exposes if another lobby implementation is encountered.
+            print('[WRTracker] lobby sub: class=%s alias=%r unique=%r keyAlias=%r active=%r' % (
+                class_name, alias, unique_name, key_alias, active
+            ))
+            return active
         except Exception as exc:
             print('[WRTracker] hangar state check failed: %s' % exc)
             return False
@@ -74,9 +95,6 @@ class WRTrackerView(View):
             print('[WRTracker] hangar active=%r' % active)
             if active:
                 self._force_visible()
-                # Refresh immediately after returning to the garage so the
-                # widget reflects a newly completed battle without waiting
-                # for the normal five-second refresh timer.
                 self._schedule_update(initial=True)
             else:
                 self.flashObject.visible = False
@@ -228,9 +246,6 @@ def setup():
         SWF_NAME,
         WindowLayer.TOP_WINDOW,
         None,
-        # The tracker is loaded from SF_LOBBY and kept global so the same SWF
-        # instance survives lobby navigation. Its Python side now explicitly
-        # follows the active LOBBY_SUB view and only shows itself in Hangar.
         ScopeTemplates.GLOBAL_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
