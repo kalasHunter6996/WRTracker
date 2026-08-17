@@ -120,10 +120,10 @@ class WRTrackerView(View):
             self.flashObject.visible = True
             self.flashObject.alpha = 1.0
             self.flashObject.x = 30
-            self.flashObject.y = 170
+            self.flashObject.y = 150
             self.flashObject.scaleX = 1.0
             self.flashObject.scaleY = 1.0
-            print('[WRTracker] forced flashObject visible at x=30 y=170')
+            print('[WRTracker] forced flashObject visible at x=30 y=150')
         except Exception as exc:
             print('[WRTracker] force visible failed: %s' % exc)
 
@@ -189,6 +189,8 @@ class WRTrackerView(View):
             wr = round(raw_wr, 2)
             half = (int(raw_wr * 2.0) + 1) / 2.0
             whole = int(raw_wr) + 1
+            if whole <= half:
+                whole = int(half) + 1
             half_wins = self._wins_to_target(wins, battles, half)
             whole_wins = self._wins_to_target(wins, battles, whole)
             print('[WRTracker] battles=%d wins=%d winrate=%.2f halfTarget=%.1f halfWins=%d wholeTarget=%d wholeWins=%d' % (
@@ -198,7 +200,7 @@ class WRTrackerView(View):
                 '%.2f' % wr,
                 '%.1f' % half,
                 str(half_wins),
-                '%d|%d|%d' % (whole, whole_wins, battles)
+                '%d|%d|%d|%d' % (whole, whole_wins, battles, wins)
             )
             return True
         except Exception as exc:
