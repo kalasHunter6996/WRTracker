@@ -15,18 +15,22 @@ package wrtracker {
 
         public function WrTrackerView() {
             super();
+            visible = true;
+            alpha = 1.0;
+            scaleX = 1.0;
+            scaleY = 1.0;
 
-            bg.graphics.beginFill(0x111111, 0.82);
-            bg.graphics.drawRoundRect(0, 0, 270, 128, 10, 10);
+            bg.graphics.beginFill(0x00FF00, 0.95);
+            bg.graphics.drawRect(0, 0, 420, 180);
             bg.graphics.endFill();
             addChild(bg);
 
-            setup(title, 12, 7, 246, 20, 12, 0xBDBDBD);
-            setup(wr, 12, 27, 246, 32, 25, 0xFFFFFF);
-            setup(half, 12, 60, 246, 20, 14, 0xDADADA);
-            setup(whole, 12, 81, 246, 20, 14, 0xDADADA);
-            setup(battles, 12, 103, 246, 18, 12, 0xA5A5A5);
-            title.text = "WR TRACKER";
+            setup(title, 15, 10, 390, 28, 18, 0x000000);
+            setup(wr, 15, 40, 390, 40, 30, 0x000000);
+            setup(half, 15, 82, 390, 25, 18, 0x000000);
+            setup(whole, 15, 110, 390, 25, 18, 0x000000);
+            setup(battles, 15, 140, 390, 22, 15, 0x000000);
+            title.text = "WR TRACKER TEST";
             wr.text = "WR TEST";
             half.text = "До .50%: --";
             whole.text = "До следующего %: --";
@@ -36,6 +40,7 @@ package wrtracker {
             addChild(half);
             addChild(whole);
             addChild(battles);
+
             x = 30;
             y = 170;
             mouseEnabled = false;
@@ -50,7 +55,7 @@ package wrtracker {
             tf.selectable = false;
             tf.mouseEnabled = false;
             var fmt:TextFormat = new TextFormat();
-            fmt.font = "$FieldFont";
+            fmt.font = "Arial";
             fmt.size = size;
             fmt.color = color;
             fmt.align = TextFormatAlign.LEFT;
