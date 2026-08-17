@@ -134,9 +134,9 @@ def setup():
         WR_TRACKER_VIEW,
         WRTrackerView,
         SWF_NAME,
-        WindowLayer.WINDOW,
+        WindowLayer.TOP_WINDOW,
         None,
-        ScopeTemplates.VIEW_SCOPE
+        ScopeTemplates.DEFAULT_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
     g_eventBus.addListener(
