@@ -62,6 +62,7 @@ class WRTrackerView(View):
         self._poll_stats()
 
     def _poll_stats(self):
+        self._refresh_scheduled = False
         if self.flashObject is None:
             return
         self._polls += 1
@@ -165,7 +166,7 @@ def setup():
         SWF_NAME,
         WindowLayer.TOP_WINDOW,
         None,
-        ScopeTemplates.DEFAULT_SCOPE
+        ScopeTemplates.VIEW_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
     g_eventBus.addListener(
