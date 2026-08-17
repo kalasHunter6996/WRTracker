@@ -2,7 +2,7 @@
 import BigWorld
 from frameworks.wulf import WindowLayer
 from gui.Scaleform.framework.entities.View import View
-from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings
+from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings, ViewTypes
 from gui.Scaleform.framework.managers.loaders import SFViewLoadParams
 from gui.shared import events, EVENT_BUS_SCOPE, g_eventBus
 from gui.app_loader.settings import APP_NAME_SPACE
@@ -12,6 +12,7 @@ from wrtracker_stats import AccountStats
 WR_TRACKER_VIEW = 'KALAS_WR_TRACKER_VIEW'
 SWF_NAME = 'kalas.wrtracker.WrTrackerView.swf'
 REFRESH_INTERVAL = 5.0
+VISIBILITY_INTERVAL = 0.5
 
 
 class WRTrackerView(View):
@@ -21,19 +22,66 @@ class WRTrackerView(View):
         self._polls = 0
         self._polling = False
         self._refresh_scheduled = False
+        self._visibility_scheduled = False
+        self._hangar_active = False
         print('[WRTracker] View __init__')
 
     def _populate(self):
         super(WRTrackerView, self)._populate()
         print('[WRTracker] View populated, flashObject=%r' % self.flashObject)
-        self._force_visible()
+        self._schedule_visibility_check()
         self._schedule_update(initial=True)
 
     def _dispose(self):
         print('[WRTracker] View dispose')
         self._refresh_scheduled = False
+        self._visibility_scheduled = False
         self._polling = False
+        self._hangar_active = False
         super(WRTrackerView, self)._dispose()
+
+    def _is_hangar_active(self):
+        try:
+            app = ServicesLocator.appLoader.getApp(APP_NAME_SPACE.SF_LOBBY)
+            if app is None or app.containerManager is None:
+                return False
+
+            # LOBBY_SUB is the central lobby container. Its current view is
+            # Hangar while the player is in the garage, and another view (for
+            # example achievements, store, missions, etc.) when the player
+            # leaves the garage. This lets the global tracker stay registered
+            # without drawing over other lobby screens.
+            current = app.containerManager.getView(ViewTypes.LOBBY_SUB)
+            return current is not None and getattr(current, 'alias', None) == 'hangar'
+        except Exception as exc:
+            print('[WRTracker] hangar state check failed: %s' % exc)
+            return False
+
+    def _schedule_visibility_check(self):
+        if self._visibility_scheduled or self.flashObject is None:
+            return
+        self._visibility_scheduled = True
+        BigWorld.callback(VISIBILITY_INTERVAL, self._check_visibility)
+
+    def _check_visibility(self):
+        self._visibility_scheduled = False
+        if self.flashObject is None:
+            return
+
+        active = self._is_hangar_active()
+        if active != self._hangar_active:
+            self._hangar_active = active
+            print('[WRTracker] hangar active=%r' % active)
+            if active:
+                self._force_visible()
+                # Refresh immediately after returning to the garage so the
+                # widget reflects a newly completed battle without waiting
+                # for the normal five-second refresh timer.
+                self._schedule_update(initial=True)
+            else:
+                self.flashObject.visible = False
+
+        self._schedule_visibility_check()
 
     def _force_visible(self):
         try:
@@ -58,6 +106,12 @@ class WRTrackerView(View):
         self._refresh_scheduled = False
         if self.flashObject is None:
             return
+        if not self._is_hangar_active():
+            self._hangar_active = False
+            self.flashObject.visible = False
+            self._schedule_update()
+            return
+        self._hangar_active = True
         self._force_visible()
         self._poll_stats()
 
@@ -65,6 +119,14 @@ class WRTrackerView(View):
         self._refresh_scheduled = False
         if self.flashObject is None:
             return
+        if not self._is_hangar_active():
+            self._hangar_active = False
+            self.flashObject.visible = False
+            self._polls = 0
+            self._polling = False
+            self._schedule_visibility_check()
+            return
+
         self._polls += 1
         if self._update():
             self._polls = 0
@@ -166,10 +228,9 @@ def setup():
         SWF_NAME,
         WindowLayer.TOP_WINDOW,
         None,
-        # The tracker is loaded from SF_LOBBY, but must survive the transition
-        # from the login/lobby pages into the actual Hangar view. VIEW_SCOPE is
-        # tied to the current page and disposes the view when Hangar is created.
-        # GLOBAL_SCOPE keeps the overlay alive for the whole lobby application.
+        # The tracker is loaded from SF_LOBBY and kept global so the same SWF
+        # instance survives lobby navigation. Its Python side now explicitly
+        # follows the active LOBBY_SUB view and only shows itself in Hangar.
         ScopeTemplates.GLOBAL_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
