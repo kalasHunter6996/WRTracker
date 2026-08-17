@@ -19,7 +19,9 @@ class AccountStats(object):
             total = dossier.getTotalStats()
             self.battles = int(total.getBattlesCount() or 0)
             self.wins = int(total.getWinsCount() or 0)
-            return self.battles > 0
+            if self.battles <= 0:
+                return False
+            return self.wins, self.battles
         except Exception as exc:
             print('[WRTracker] stats update failed: %s' % exc)
             return False
