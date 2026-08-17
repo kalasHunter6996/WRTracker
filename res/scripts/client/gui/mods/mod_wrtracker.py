@@ -11,6 +11,7 @@ from wrtracker_stats import AccountStats
 
 WR_TRACKER_VIEW = 'KALAS_WR_TRACKER_VIEW'
 SWF_NAME = 'kalas.wrtracker.WrTrackerView.swf'
+REFRESH_INTERVAL = 5.0
 
 
 class WRTrackerView(View):
@@ -19,32 +20,43 @@ class WRTrackerView(View):
         self._stats = AccountStats()
         self._polls = 0
         self._polling = False
+        self._refresh_scheduled = False
         print('[WRTracker] View __init__')
 
     def _populate(self):
         super(WRTrackerView, self)._populate()
         print('[WRTracker] View populated, flashObject=%r' % self.flashObject)
-        self._schedule_update()
+        self._schedule_update(initial=True)
 
-    def _schedule_update(self):
-        if self._polling:
+    def _schedule_update(self, initial=False):
+        if self._refresh_scheduled or self.flashObject is None:
             return
-        self._polling = True
-        self._polls = 0
-        BigWorld.callback(0.5, self._poll_stats)
+        self._refresh_scheduled = True
+        delay = 0.5 if initial else REFRESH_INTERVAL
+        BigWorld.callback(delay, self._refresh)
+
+    def _refresh(self):
+        self._refresh_scheduled = False
+        if self.flashObject is None:
+            return
+        self._poll_stats()
 
     def _poll_stats(self):
-        self._polling = False
         if self.flashObject is None:
             return
         self._polls += 1
         if self._update():
-            return
-        if self._polls < 60:
-            self._polling = True
+            self._polls = 0
+        elif self._polls < 60:
             BigWorld.callback(1.0, self._poll_stats)
+            self._polling = True
+            return
         else:
             print('[WRTracker] stats polling timed out')
+            self._polls = 0
+
+        self._polling = False
+        self._schedule_update()
 
     def _update(self):
         try:
@@ -58,9 +70,10 @@ class WRTrackerView(View):
                 print('[WRTracker] stats invalid: battles=%d wins=%d' % (battles, wins))
                 return False
 
-            wr = round(float(wins) * 100.0 / battles, 2)
-            half = (int(wr * 2.0) + 1) / 2.0
-            whole = int(wr) + 1
+            raw_wr = float(wins) * 100.0 / battles
+            wr = round(raw_wr, 2)
+            half = (int(raw_wr * 2.0) + 1) / 2.0
+            whole = int(raw_wr) + 1
             half_wins = self._wins_to_target(wins, battles, half)
             whole_wins = self._wins_to_target(wins, battles, whole)
             print('[WRTracker] battles=%d wins=%d winrate=%.2f halfTarget=%.1f halfWins=%d wholeTarget=%d wholeWins=%d' % (
