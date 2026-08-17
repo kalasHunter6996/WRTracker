@@ -166,7 +166,11 @@ def setup():
         SWF_NAME,
         WindowLayer.TOP_WINDOW,
         None,
-        ScopeTemplates.VIEW_SCOPE
+        # The tracker is loaded from SF_LOBBY, but must survive the transition
+        # from the login/lobby pages into the actual Hangar view. VIEW_SCOPE is
+        # tied to the current page and disposes the view when Hangar is created.
+        # GLOBAL_SCOPE keeps the overlay alive for the whole lobby application.
+        ScopeTemplates.GLOBAL_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
     g_eventBus.addListener(
