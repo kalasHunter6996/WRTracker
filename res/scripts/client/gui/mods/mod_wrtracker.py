@@ -2,7 +2,7 @@
 import BigWorld
 from frameworks.wulf import WindowLayer
 from gui.Scaleform.framework.entities.View import View
-from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings, ViewTypes
+from gui.Scaleform.framework import g_entitiesFactories, ScopeTemplates, ViewSettings
 from gui.Scaleform.framework.managers.loaders import SFViewLoadParams
 from gui.shared import events, EVENT_BUS_SCOPE, g_eventBus
 from gui.app_loader.settings import APP_NAME_SPACE
@@ -46,34 +46,48 @@ class WRTrackerView(View):
             if app is None or app.containerManager is None:
                 return False
 
-            current = app.containerManager.getView(ViewTypes.LOBBY_SUB)
+            # WoT 1.44 no longer exports ViewTypes from gui.Scaleform.framework.
+            # We therefore avoid importing that symbol and probe the numeric
+            # container IDs used by the current client. getView() is a lookup
+            # only, so probing is harmless; we accept a view only when its
+            # identity clearly says Hangar.
+            current = None
+            current_id = None
+            for view_id in range(0, 16):
+                try:
+                    candidate = app.containerManager.getView(view_id)
+                except Exception:
+                    candidate = None
+                if candidate is None:
+                    continue
+
+                alias = getattr(candidate, 'alias', None)
+                unique_name = getattr(candidate, 'uniqueName', None)
+                class_name = getattr(candidate.__class__, '__name__', '')
+                view_key = getattr(candidate, 'viewKey', None)
+                key_alias = getattr(view_key, 'alias', None) if view_key is not None else None
+                if (
+                    alias == 'hangar' or
+                    unique_name == 'hangar' or
+                    key_alias == 'hangar' or
+                    class_name in ('Hangar', 'HangarView')
+                ):
+                    current = candidate
+                    current_id = view_id
+                    break
+
             if current is None:
                 return False
 
-            # In this client the object returned by LOBBY_SUB is the actual
-            # central lobby view, but its public ``alias`` is not reliable.
-            # Depending on the client/mod combination it can expose the view
-            # identity through uniqueName, __class__.__name__, or ViewKey.
             alias = getattr(current, 'alias', None)
             unique_name = getattr(current, 'uniqueName', None)
             class_name = getattr(current.__class__, '__name__', '')
             view_key = getattr(current, 'viewKey', None)
             key_alias = getattr(view_key, 'alias', None) if view_key is not None else None
-
-            active = (
-                alias == 'hangar' or
-                unique_name == 'hangar' or
-                key_alias == 'hangar' or
-                class_name == 'Hangar' or
-                class_name == 'HangarView'
-            )
-
-            # Keep this diagnostic compact: it will show exactly what the
-            # client exposes if another lobby implementation is encountered.
-            print('[WRTracker] lobby sub: class=%s alias=%r unique=%r keyAlias=%r active=%r' % (
-                class_name, alias, unique_name, key_alias, active
+            print('[WRTracker] lobby sub: id=%r class=%s alias=%r unique=%r keyAlias=%r active=True' % (
+                current_id, class_name, alias, unique_name, key_alias
             ))
-            return active
+            return True
         except Exception as exc:
             print('[WRTracker] hangar state check failed: %s' % exc)
             return False
