@@ -1,5 +1,6 @@
 package wrtracker {
     import flash.display.Sprite;
+    import flash.events.Event;
     import flash.events.MouseEvent;
     import flash.events.KeyboardEvent;
     import flash.text.TextField;
@@ -71,9 +72,12 @@ package wrtracker {
 
             x = 30;
             y = 150;
-            if (stage) {
-                stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
-            }
+            addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+        }
+
+        private function onAddedToStage(event:Event):void {
+            removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+            stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
         }
 
         private function setup(tf:TextField, px:Number, py:Number, w:Number, h:Number, size:int, color:uint, bold:Boolean):void {
@@ -125,26 +129,23 @@ package wrtracker {
             return userHidden;
         }
 
-        public function as_show():void {
-            userHidden = false;
-            visible = true;
-        }
-
         public function as_setData(wrValue:String, halfTarget:String, halfWins:String, wholeData:String):void {
             if (!wrValue || wrValue == "") return;
             var parts:Array = wholeData.split("|");
             if (parts.length < 4) return;
-
             wr.text = wrValue + "%";
             target.text = halfTarget + "%  ·  " + halfWins;
             next.text = parts[0] + "%  ·  " + parts[1];
         }
 
         override protected function onDispose():void {
-            if (stage) stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+            removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+            if (stage) {
+                stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+                stage.removeEventListener(MouseEvent.MOUSE_UP, onDragStop);
+            }
             panel.removeEventListener(MouseEvent.MOUSE_DOWN, onDragStart);
             hideButton.removeEventListener(MouseEvent.CLICK, onHideClick);
-            if (stage) stage.removeEventListener(MouseEvent.MOUSE_UP, onDragStop);
             super.onDispose();
         }
     }
