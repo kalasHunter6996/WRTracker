@@ -45,12 +45,6 @@ class WRTrackerView(View):
             app = ServicesLocator.appLoader.getApp(APP_NAME_SPACE.SF_LOBBY)
             if app is None or app.containerManager is None:
                 return False
-
-            # WoT 1.44 no longer exports ViewTypes from gui.Scaleform.framework.
-            # We therefore avoid importing that symbol and probe the numeric
-            # container IDs used by the current client. getView() is a lookup
-            # only, so probing is harmless; we accept a view only when its
-            # identity clearly says Hangar.
             current = None
             current_id = None
             for view_id in range(0, 16):
@@ -60,33 +54,25 @@ class WRTrackerView(View):
                     candidate = None
                 if candidate is None:
                     continue
-
                 alias = getattr(candidate, 'alias', None)
                 unique_name = getattr(candidate, 'uniqueName', None)
                 class_name = getattr(candidate.__class__, '__name__', '')
                 view_key = getattr(candidate, 'viewKey', None)
                 key_alias = getattr(view_key, 'alias', None) if view_key is not None else None
-                if (
-                    alias == 'hangar' or
-                    unique_name == 'hangar' or
-                    key_alias == 'hangar' or
-                    class_name in ('Hangar', 'HangarView')
-                ):
+                if (alias == 'hangar' or unique_name == 'hangar' or key_alias == 'hangar' or
+                        class_name in ('Hangar', 'HangarView')):
                     current = candidate
                     current_id = view_id
                     break
-
             if current is None:
                 return False
-
             alias = getattr(current, 'alias', None)
             unique_name = getattr(current, 'uniqueName', None)
             class_name = getattr(current.__class__, '__name__', '')
             view_key = getattr(current, 'viewKey', None)
             key_alias = getattr(view_key, 'alias', None) if view_key is not None else None
             print('[WRTracker] lobby sub: id=%r class=%s alias=%r unique=%r keyAlias=%r active=True' % (
-                current_id, class_name, alias, unique_name, key_alias
-            ))
+                current_id, class_name, alias, unique_name, key_alias))
             return True
         except Exception as exc:
             print('[WRTracker] hangar state check failed: %s' % exc)
@@ -102,7 +88,6 @@ class WRTrackerView(View):
         self._visibility_scheduled = False
         if self.flashObject is None:
             return
-
         active = self._is_hangar_active()
         if active != self._hangar_active:
             self._hangar_active = active
@@ -112,18 +97,23 @@ class WRTrackerView(View):
                 self._schedule_update(initial=True)
             else:
                 self.flashObject.visible = False
-
         self._schedule_visibility_check()
 
     def _force_visible(self):
         try:
+            # Do not overwrite the user's dragged position or F8/close-button state.
+            hidden = False
+            try:
+                hidden = bool(self.flashObject.as_isHidden())
+            except Exception:
+                pass
+            if hidden:
+                self.flashObject.visible = False
+                return
             self.flashObject.visible = True
             self.flashObject.alpha = 1.0
-            self.flashObject.x = 30
-            self.flashObject.y = 150
             self.flashObject.scaleX = 1.0
             self.flashObject.scaleY = 1.0
-            print('[WRTracker] forced flashObject visible at x=30 y=150')
         except Exception as exc:
             print('[WRTracker] force visible failed: %s' % exc)
 
@@ -158,7 +148,6 @@ class WRTrackerView(View):
             self._polling = False
             self._schedule_visibility_check()
             return
-
         self._polls += 1
         if self._update():
             self._polls = 0
@@ -169,7 +158,6 @@ class WRTrackerView(View):
         else:
             print('[WRTracker] stats polling timed out')
             self._polls = 0
-
         self._polling = False
         self._schedule_update()
 
@@ -179,12 +167,10 @@ class WRTrackerView(View):
             print('[WRTracker] stats result=%r' % (result,))
             if not result:
                 return False
-
             wins, battles = result
             if battles <= 0:
                 print('[WRTracker] stats invalid: battles=%d wins=%d' % (battles, wins))
                 return False
-
             raw_wr = float(wins) * 100.0 / battles
             wr = round(raw_wr, 2)
             half = (int(raw_wr * 2.0) + 1) / 2.0
@@ -194,14 +180,9 @@ class WRTrackerView(View):
             half_wins = self._wins_to_target(wins, battles, half)
             whole_wins = self._wins_to_target(wins, battles, whole)
             print('[WRTracker] battles=%d wins=%d winrate=%.2f halfTarget=%.1f halfWins=%d wholeTarget=%d wholeWins=%d' % (
-                battles, wins, wr, half, half_wins, whole, whole_wins
-            ))
-            self.as_setData(
-                '%.2f' % wr,
-                '%.1f' % half,
-                str(half_wins),
-                '%d|%d|%d|%d' % (whole, whole_wins, battles, wins)
-            )
+                battles, wins, wr, half, half_wins, whole, whole_wins))
+            self.as_setData('%.2f' % wr, '%.1f' % half, str(half_wins),
+                            '%d|%d|%d|%d' % (whole, whole_wins, battles, wins))
             return True
         except Exception as exc:
             print('[WRTracker] update failed: %s' % exc)
@@ -265,16 +246,8 @@ def setup():
         ScopeTemplates.GLOBAL_SCOPE
     )
     g_entitiesFactories.addSettings(settings)
-    g_eventBus.addListener(
-        events.AppLifeCycleEvent.INITIALIZED,
-        _on_app_initialized,
-        EVENT_BUS_SCOPE.GLOBAL
-    )
-    g_eventBus.addListener(
-        events.AppLifeCycleEvent.DESTROYED,
-        _on_app_destroyed,
-        EVENT_BUS_SCOPE.GLOBAL
-    )
+    g_eventBus.addListener(events.AppLifeCycleEvent.INITIALIZED, _on_app_initialized, EVENT_BUS_SCOPE.GLOBAL)
+    g_eventBus.addListener(events.AppLifeCycleEvent.DESTROYED, _on_app_destroyed, EVENT_BUS_SCOPE.GLOBAL)
 
 
 setup()
