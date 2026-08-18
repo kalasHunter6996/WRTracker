@@ -15,5 +15,6 @@ package net.wg.infrastructure.base {
         public function set loader(value:Object):void { }
 
         protected function configUI():void { }
+        protected function onDispose():void { }
     }
 }
