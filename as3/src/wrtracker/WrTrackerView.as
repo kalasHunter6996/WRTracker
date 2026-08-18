@@ -1,29 +1,29 @@
 package wrtracker {
     import flash.display.Sprite;
+    import flash.events.MouseEvent;
+    import flash.events.KeyboardEvent;
     import flash.text.TextField;
     import flash.text.TextFormat;
     import flash.text.TextFormatAlign;
+    import flash.ui.Keyboard;
     import net.wg.infrastructure.base.AbstractView;
 
     public class WrTrackerView extends AbstractView {
         private var panel:Sprite = new Sprite();
         private var accent:Sprite = new Sprite();
-        private var progressBg:Sprite = new Sprite();
-        private var progressFill:Sprite = new Sprite();
         private var title:TextField = new TextField();
-        private var subtitle:TextField = new TextField();
         private var wr:TextField = new TextField();
-        private var stats:TextField = new TextField();
-        private var targetLabel:TextField = new TextField();
         private var target:TextField = new TextField();
-        private var nextLabel:TextField = new TextField();
         private var next:TextField = new TextField();
-        private var footer:TextField = new TextField();
+        private var hint:TextField = new TextField();
+        private var hideButton:TextField = new TextField();
+        private var userHidden:Boolean = false;
+        private var dragging:Boolean = false;
 
-        private static const PANEL_W:Number = 430;
-        private static const PANEL_H:Number = 154;
+        private static const PANEL_W:Number = 360;
+        private static const PANEL_H:Number = 112;
         private static const BG:uint = 0x111820;
-        private static const PANEL_ALPHA:Number = 0.90;
+        private static const PANEL_ALPHA:Number = 0.92;
         private static const ACCENT:uint = 0xF2A900;
         private static const TEXT:uint = 0xE8E8E8;
         private static const MUTED:uint = 0x8F9AA5;
@@ -31,65 +31,49 @@ package wrtracker {
         public function WrTrackerView() {
             super();
             visible = true;
-            alpha = 1.0;
-            scaleX = 1.0;
-            scaleY = 1.0;
-            mouseEnabled = false;
-            mouseChildren = false;
+            mouseEnabled = true;
+            mouseChildren = true;
 
             panel.graphics.beginFill(BG, PANEL_ALPHA);
-            panel.graphics.drawRoundRect(0, 0, PANEL_W, PANEL_H, 10, 10);
+            panel.graphics.drawRoundRect(0, 0, PANEL_W, PANEL_H, 9, 9);
             panel.graphics.endFill();
+            panel.buttonMode = true;
+            panel.addEventListener(MouseEvent.MOUSE_DOWN, onDragStart);
             addChild(panel);
 
             accent.graphics.beginFill(ACCENT, 1.0);
-            accent.graphics.drawRoundRect(0, 0, 4, PANEL_H, 4, 4);
+            accent.graphics.drawRoundRect(0, 0, 3, PANEL_H, 3, 3);
             accent.graphics.endFill();
             addChild(accent);
 
-            setup(title, 18, 10, 220, 20, 15, TEXT, true);
-            setup(subtitle, 18, 31, 220, 16, 10, MUTED, false);
-            setup(wr, 18, 49, 190, 48, 36, TEXT, true);
-            setup(stats, 18, 96, 190, 22, 13, MUTED, false);
+            setup(title, 14, 9, 230, 18, 13, TEXT, true);
+            setup(wr, 14, 27, 150, 40, 30, TEXT, true);
+            setup(target, 175, 18, 165, 27, 18, TEXT, true);
+            setup(next, 175, 52, 165, 27, 18, TEXT, true);
+            setup(hint, 14, 88, 260, 15, 9, MUTED, false);
+            setup(hideButton, 327, 8, 22, 20, 14, MUTED, true);
 
-            setup(targetLabel, 232, 12, 175, 16, 10, MUTED, false);
-            setup(target, 232, 28, 175, 29, 20, TEXT, true);
-            setup(nextLabel, 232, 64, 175, 16, 10, MUTED, false);
-            setup(next, 232, 80, 175, 29, 20, TEXT, true);
-            setup(footer, 18, 128, 389, 18, 10, MUTED, false);
-
-            title.text = "WR TRACKER";
-            subtitle.text = "АККАУНТ · СЛУЧАЙНЫЕ БОИ";
+            title.text = "WR TRACKER  ·  АККАУНТ";
             wr.text = "--.--%";
-            stats.text = "-- побед · -- боёв";
-            targetLabel.text = "СЛЕДУЮЩАЯ ОТМЕТКА";
-            target.text = "--";
-            nextLabel.text = "СЛЕДУЮЩИЙ ЦЕЛЫЙ %";
-            next.text = "--";
-            footer.text = "Статистика обновляется в ангаре";
+            target.text = "48.0% · --";
+            next.text = "49% · --";
+            hint.text = "перетащить · F8 — скрыть/показать";
+            hideButton.text = "×";
+            hideButton.mouseEnabled = true;
+            hideButton.addEventListener(MouseEvent.CLICK, onHideClick);
 
             addChild(title);
-            addChild(subtitle);
             addChild(wr);
-            addChild(stats);
-            addChild(targetLabel);
             addChild(target);
-            addChild(nextLabel);
             addChild(next);
-            addChild(footer);
-
-            progressBg.graphics.beginFill(0x303942, 1.0);
-            progressBg.graphics.drawRoundRect(18, 120, 389, 4, 4, 4);
-            progressBg.graphics.endFill();
-            addChild(progressBg);
-
-            progressFill.graphics.beginFill(ACCENT, 1.0);
-            progressFill.graphics.drawRoundRect(18, 120, 1, 4, 4, 4);
-            progressFill.graphics.endFill();
-            addChild(progressFill);
+            addChild(hint);
+            addChild(hideButton);
 
             x = 30;
             y = 150;
+            if (stage) {
+                stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+            }
         }
 
         private function setup(tf:TextField, px:Number, py:Number, w:Number, h:Number, size:int, color:uint, bold:Boolean):void {
@@ -111,36 +95,57 @@ package wrtracker {
             tf.setTextFormat(fmt);
         }
 
-        private function setProgress(current:Number, targetValue:Number):void {
-            var start:Number = Math.floor(current);
-            if (targetValue <= start) {
-                progressFill.width = 389;
-                return;
+        private function onDragStart(event:MouseEvent):void {
+            if (event.target == hideButton) return;
+            dragging = true;
+            startDrag(false);
+            stage.addEventListener(MouseEvent.MOUSE_UP, onDragStop);
+        }
+
+        private function onDragStop(event:MouseEvent):void {
+            if (!dragging) return;
+            dragging = false;
+            stopDrag();
+            stage.removeEventListener(MouseEvent.MOUSE_UP, onDragStop);
+        }
+
+        private function onHideClick(event:MouseEvent):void {
+            userHidden = true;
+            visible = false;
+        }
+
+        private function onKeyDown(event:KeyboardEvent):void {
+            if (event.keyCode == Keyboard.F8) {
+                userHidden = !userHidden;
+                visible = !userHidden;
             }
-            var ratio:Number = (current - start) / (targetValue - start);
-            if (ratio < 0) ratio = 0;
-            if (ratio > 1) ratio = 1;
-            progressFill.width = Math.max(1, 389 * ratio);
+        }
+
+        public function as_isHidden():Boolean {
+            return userHidden;
+        }
+
+        public function as_show():void {
+            userHidden = false;
+            visible = true;
         }
 
         public function as_setData(wrValue:String, halfTarget:String, halfWins:String, wholeData:String):void {
-            if (!wrValue || wrValue == "") {
-                return;
-            }
+            if (!wrValue || wrValue == "") return;
             var parts:Array = wholeData.split("|");
-            if (parts.length < 4) {
-                return;
-            }
-
-            var current:Number = Number(wrValue);
-            var halfValue:Number = Number(halfTarget);
+            if (parts.length < 4) return;
 
             wr.text = wrValue + "%";
-            stats.text = parts[3] + " побед · " + parts[2] + " боёв";
             target.text = halfTarget + "%  ·  " + halfWins;
             next.text = parts[0] + "%  ·  " + parts[1];
-            footer.text = "Побед до цели · данные обновляются автоматически";
-            setProgress(current, halfValue);
+        }
+
+        override protected function onDispose():void {
+            if (stage) stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+            panel.removeEventListener(MouseEvent.MOUSE_DOWN, onDragStart);
+            hideButton.removeEventListener(MouseEvent.CLICK, onHideClick);
+            if (stage) stage.removeEventListener(MouseEvent.MOUSE_UP, onDragStop);
+            super.onDispose();
         }
     }
 }
